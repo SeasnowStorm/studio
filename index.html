@@ -600,10 +600,10 @@ dialog{background:var(--surface);box-shadow:0 20px 60px rgba(0,0,0,.5)}
     <div class="titre-plus"><h2>Plus de réglages</h2><button class="croix" type="button" data-fermer-plus aria-label="Fermer">✕</button></div>
     <div class="panneau gauche">
     <div id="f-reco" class="bloc cache">
-      <p><b>fineporn v6 (Krea 2), le modèle conseillé pour Créer</b></p>
+      <p><b>fineporn v5 (Krea 2), le modèle conseillé pour Créer</b></p>
       <p class="tres-discret">Fine-tune de Krea 2, depuis Civitai, vérifié par son empreinte. S'ils manquent, l'encodeur et le VAE officiels de Krea 2 sont ajoutés, ainsi que le LoRA de variété SDA (désactivable ici avec « Plus de variété »). Demande ta clé Civitai (Réglages).</p>
       <div class="interrupteur"><div><b>Ajouter à ma liste</b><small>Réinstallé automatiquement aux prochaines sessions</small></div><label class="bascule"><input type="checkbox" id="f-reco-liste" checked><span></span></label></div>
-      <button class="bouton principal plein" type="button" id="f-reco-btn">Installer fineporn v6</button>
+      <button class="bouton principal plein" type="button" id="f-reco-btn">Installer fineporn v5</button>
     </div>
     <label class="champ"><span>Workflow</span><select id="f-workflow"></select></label>
     <div id="f-std-haut">
@@ -730,7 +730,7 @@ dialog{background:var(--surface);box-shadow:0 20px 60px rgba(0,0,0,.5)}
     <div class="titre-plus"><h2>Plus de réglages</h2><button class="croix" type="button" data-fermer-plus aria-label="Fermer">✕</button></div>
     <div class="panneau gauche">
     <div id="r-reco" class="bloc cache">
-      <p><b>Retouche conseillée : fineporn v6 + AnyPaint + Identity Edit</b></p>
+      <p><b>Retouche conseillée : fineporn v5 + AnyPaint + Identity Edit</b></p>
       <p class="tres-discret" id="r-reco-texte"></p>
       <div class="interrupteur"><div><b>Ajouter à ma liste</b><small>Réinstallé automatiquement aux prochaines sessions</small></div><label class="bascule"><input type="checkbox" id="r-reco-liste" checked><span></span></label></div>
       <button class="bouton principal plein" type="button" id="r-reco-btn">Installer</button>
@@ -1141,7 +1141,7 @@ dialog{background:var(--surface);box-shadow:0 20px 60px rgba(0,0,0,.5)}
 <script>
 "use strict";
 const VERSION_APP = "1.0";
-const PAQUET = {fichier: "pod-0d0fc897cd3d.tgz", sha: "0d0fc897cd3dfbf44287c424f981ec6afd01d47008133d540a71ccdf2a2ce927"};
+const PAQUET = {fichier: "pod-5e23c17f37bc.tgz", sha: "5e23c17f37bcf527aaa84bc3002bd89461dc4465820d05d45108c39a4f155fcf"};
 // PyTorch 2.9.1 pour CUDA 13 : indispensable aux noyaux optimisés de ComfyUI (comfy-kitchen : int8 convrot, nvfp4, fp8,
 // RoPE, RMSNorm), désactivés avec CUDA 12. Demande une machine à pilote récent (r580+) : filtre « CUDA 13.0 » au déploiement.
 // Avec une ancienne image (CUDA 12), le Pod installe lui-même PyTorch CUDA 13 au démarrage si le pilote le permet.
@@ -1874,9 +1874,9 @@ function rendreFormulaireOptions() {
   if (enAttente) {
     sel.prepend(el("option", {value: F.modele, texte: "Modèle mémorisé : téléchargement en cours…", disabled: true}));
   } else if (!prin.find((m) => m.rel === F.modele)) {
-    // le modèle conseillé (fineporn v6) d'abord, sinon le premier pris en charge
+    // le modèle conseillé (fineporn v5) d'abord, sinon le premier pris en charge
     const fine = (m) => m.defauts && ((m.source || "").includes("2762538") || /fineporn/i.test(`${m.nom} ${m.origine || ""} ${m.fichier}`));
-    const premier = prin.find((m) => fine(m) && estFinepornV6(m)) || prin.find(fine) || prin.find((m) => m.defauts) || null;
+    const premier = prin.find((m) => fine(m) && estFinepornConseille(m)) || prin.find(fine) || prin.find((m) => m.defauts) || null;
     F.modele = premier ? premier.rel : null;
     if (premier) appliquerDefauts(premier);
   }
@@ -2547,7 +2547,7 @@ function defautsRT(m) {   // réglages conseillés du modèle ; avec un adaptate
   const d = m && m.defauts; if (!d) return null;
   const k = modeKrea(m), turbo = d.variante === "Turbo";
   // réglages de l'auteur : V2 Turbo 8 étapes CFG 1 ; General Edit Raw 20 étapes CFG 3 ; v1.2 Turbo 10 étapes
-  // échantillonneur des auteurs des adaptateurs : euler / simple (un sampler SDE comme er_sde, conseillé pour fineporn v6
+  // échantillonneur des auteurs des adaptateurs : euler / simple (un sampler SDE comme er_sde, même choisi pour le modèle,
   // seul, perturbe la recopie de l'image de référence selon l'auteur de Krea2Edit)
   const ode = {sampler: "euler", scheduler: "simple"};
   if (k === "identite") return Object.assign({}, d, ode, {steps: turbo ? (RT.versionIdentite === "v1.2" ? 10 : 8) : 30, cfg: turbo ? 1 : 3, negatif: false});
@@ -2567,8 +2567,8 @@ function maxReferences(m) {
   return 0;
 }
 function maxReferencesRT() { const w = wfCourant("r"); return w ? Math.max(0, w.nb_images - 1) : maxReferences(modeleRT()); }
-// Retouche conseillée : fineporn v6 (Krea 2) avec ses adaptateurs AnyPaint (zone peinte) et Identity Edit (ressemblance)
-const RECO_RT = () => [{k: "fineporn", el: FINEPORN, nom: "fineporn v6", detail: "fineporn v6 depuis Civitai (clé nécessaire, variante choisie selon la carte)"},
+// Retouche conseillée : fineporn v5 (Krea 2) avec ses adaptateurs AnyPaint (zone peinte) et Identity Edit (ressemblance)
+const RECO_RT = () => [{k: "fineporn", el: FINEPORN, nom: "fineporn v5", detail: "fineporn v5 depuis Civitai (clé nécessaire, variante choisie selon la carte)"},
   {k: "anypaint", el: {lien: "studio:anypaint", nom: "Krea 2 AnyPaint"}, nom: "AnyPaint", detail: "Krea 2 AnyPaint (0,23 Go)"},
   {k: "identite", el: {lien: "studio:identite", nom: "Krea 2 Identity Edit V2"}, nom: "Identity Edit V2", detail: "Krea 2 Identity Edit V2 (1,8 Go)"}];
 function recoRTManquants() {
@@ -2581,7 +2581,7 @@ function rendreRecoRetouche() {
   if (!manq.length) return;
   $("r-reco-texte").textContent = "À installer : " + manq.map((x) => x.detail).join(", ") +
     ". Composants officiels de Krea 2 ajoutés s'ils manquent ; chaque fichier est vérifié par son empreinte." +
-    (manq.length < 3 && manq.every((x) => x.k !== "fineporn") ? " (fineporn v6 est déjà installé.)" : "");
+    (manq.length < 3 && manq.every((x) => x.k !== "fineporn") ? " (fineporn v5 est déjà installé.)" : "");
   $("r-reco-btn").disabled = enCours;
   $("r-reco-btn").textContent = enCours ? "Installation en cours… (voir Modèles)" : "Installer " + manq.map((x) => x.nom).join(" + ");
 }
@@ -2600,11 +2600,11 @@ function rendreRetoucheOptions() {
   const liste = modelesRetouche();
   if (!liste.length) sel.append(el("option", {value: "", texte: "Aucun modèle : ajoute-en un dans Modèles"}));
   const fine = (m) => (m.source || "").includes("2762538") || /fineporn/i.test(`${m.nom} ${m.origine || ""} ${m.fichier}`);
-  const ordre = (m) => fine(m) ? (estFinepornV6(m) ? 0 : 0.5) : m.famille === "krea2" ? 1 : m.famille === "qwen21" ? 2 : m.famille === "flux2" ? 3 : 4;
+  const ordre = (m) => fine(m) ? (estFinepornConseille(m) ? 0 : 0.5) : m.famille === "krea2" ? 1 : m.famille === "qwen21" ? 2 : m.famille === "flux2" ? 3 : 4;
   for (const m of liste.slice().sort((a, b) => ordre(a) - ordre(b)))
-    sel.append(el("option", {value: m.rel, texte: m.nom + " · " + m.defauts.variante + (estFinepornV6(m) ? " (conseillé)" : "")}));
+    sel.append(el("option", {value: m.rel, texte: m.nom + " · " + m.defauts.variante + (estFinepornConseille(m) ? " (conseillé)" : "")}));
   if (!liste.find((m) => m.rel === RT.modele)) {
-    const pref = liste.find(estFinepornV6) || liste.find(fine) || liste.find((m) => m.famille === "qwen21" && !m.defauts.turbo_integre) || liste.find((m) => m.famille === "qwen21")
+    const pref = liste.find(estFinepornConseille) || liste.find(fine) || liste.find((m) => m.famille === "qwen21" && !m.defauts.turbo_integre) || liste.find((m) => m.famille === "qwen21")
       || liste.find((m) => m.famille === "flux2") || liste.find((m) => m.rel === F.modele) || liste[0];
     choisirModeleRT(pref ? pref.rel : null);
   }
@@ -3132,18 +3132,18 @@ function choisirVue(v) {
 
 
 
-// ------------------------------------------------------------ modèle conseillé de Créer : fineporn v6 (Krea 2)
-const FINEPORN = {lien: "https://civitai.red/models/2762538?modelVersionId=3442093", nom: "fineporn v6"};
-const FINEPORN_VERSION = "3442093";
-// fineporn v6 (une version plus ancienne, v5…, ne compte pas : la v6 est proposée)
-function estFinepornV6(m) {
-  return (m.source || "").includes("modelVersionId=" + FINEPORN_VERSION) || /fineporn[^/]*v6/i.test(`${m.nom} ${m.origine || ""} ${m.fichier}`);
+// ------------------------------------------------------------ modèle conseillé de Créer : fineporn v5 (Krea 2)
+const FINEPORN = {lien: "https://civitai.red/models/2762538?modelVersionId=3361846", nom: "fineporn v5"};
+const FINEPORN_VERSION = "3361846";
+// fineporn v5, la version conseillée (une autre version, v6…, ne compte pas : la v5 est proposée)
+function estFinepornConseille(m) {
+  return (m.source || "").includes("modelVersionId=" + FINEPORN_VERSION) || /fineporn[^/]*v5/i.test(`${m.nom} ${m.origine || ""} ${m.fichier}`);
 }
 function finepornInstalle() {
   // sur une B300, une version int8 de fineporn ne compte pas : elle n'est pas utilisée, la version bf16 est proposée
-  return !!(A.modeles && A.modeles.principaux.some((m) => !m.lent && estFinepornV6(m)));
+  return !!(A.modeles && A.modeles.principaux.some((m) => !m.lent && estFinepornConseille(m)));
 }
-// « Ma liste » : l'ancienne version de fineporn est remplacée par la v6 (sinon elle serait réinstallée à chaque session)
+// « Ma liste » : une autre version de fineporn (la v6 essayée) est remplacée par la v5 (sinon elle serait réinstallée à chaque session)
 (function () {
   const i = S.liste.findIndex((x) => /\/models\/2762538(\?|\/|$)/.test(x.lien || "") && !(x.lien || "").includes(FINEPORN_VERSION));
   if (i < 0) return;
@@ -3158,13 +3158,13 @@ function rendreRecoCreer() {
   const inst = installFinepornEnCours();
   $("f-reco").classList.toggle("cache", !A.modeles || finepornInstalle());
   $("f-reco-btn").disabled = !!inst;
-  $("f-reco-btn").textContent = inst ? "Installation en cours… (voir Modèles)" : "Installer fineporn v6";
+  $("f-reco-btn").textContent = inst ? "Installation en cours… (voir Modèles)" : "Installer fineporn v5";
 }
 async function installerFineporn() {
   if (!S.cles.civitai) { toast("Ajoute d'abord ta clé Civitai dans Réglages.", true); ouvrirFeuille("reglages"); return; }
-  if (!(await confirmer("Installer fineporn v6 ?", "Téléchargé depuis Civitai sur le disque du Pod et vérifié par son empreinte ; la variante est choisie selon la carte du Pod. Les composants officiels de Krea 2 et le LoRA de variété SDA sont ajoutés s'ils manquent.", "Installer", false))) return;
+  if (!(await confirmer("Installer fineporn v5 ?", "Téléchargé depuis Civitai sur le disque du Pod et vérifié par son empreinte ; la variante est choisie selon la carte du Pod. Les composants officiels de Krea 2 et le LoRA de variété SDA sont ajoutés s'ils manquent.", "Installer", false))) return;
   if ($("f-reco-liste").checked && ajouterListe(FINEPORN)) { sauver(); rendreListe(); }
-  try { await A.canal.appel("installer_liste", {elements: [FINEPORN], jetons: jetons()}); toast("Installation de fineporn v6 lancée."); boucle(); }
+  try { await A.canal.appel("installer_liste", {elements: [FINEPORN], jetons: jetons()}); toast("Installation de fineporn v5 lancée."); boucle(); }
   catch (e) { toast(e.message, true); }
 }
 
@@ -3414,8 +3414,8 @@ const SIG_RAPIDES = {};
 function majRapides() {
   const listes = {f: [], r: [], a: []};
   // modèle conseillé pas encore installé : une pastille en tête, qui ouvre son bloc d'installation
-  if (!$("f-reco").classList.contains("cache")) listes.f.push(["i", "＋ fineporn v6", () => ouvrirPlus("f", "f-reco-btn"), "Installer le modèle conseillé fineporn v6"]);
-  if (!$("r-reco").classList.contains("cache")) listes.r.push(["i", "＋ Retouche conseillée", () => ouvrirPlus("r", "r-reco-btn"), "Installer fineporn v6, AnyPaint et Identity Edit"]);
+  if (!$("f-reco").classList.contains("cache")) listes.f.push(["i", "＋ fineporn v5", () => ouvrirPlus("f", "f-reco-btn"), "Installer le modèle conseillé fineporn v5"]);
+  if (!$("r-reco").classList.contains("cache")) listes.r.push(["i", "＋ Retouche conseillée", () => ouvrirPlus("r", "r-reco-btn"), "Installer fineporn v5, AnyPaint et Identity Edit"]);
   if (!$("a-installer").classList.contains("cache")) listes.a.push(["i", videosInv().eros_a_completer ? "＋ 10Eros optimisé" : "＋ 10Eros Max", () => ouvrirPlus("a", "a-installer-btn"), "Installer le modèle vidéo conseillé 10Eros Max"]);
   const wfF = !$("f-wf").classList.contains("cache"), wfR = !$("r-wf").classList.contains("cache");
   // Créer
